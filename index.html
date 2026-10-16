@@ -119,6 +119,17 @@ ul{margin:0;padding:0}
 .hero-plan{display:block;width:100%;height:auto}
 .hero3d{display:block;width:100%;aspect-ratio:520/420;border-radius:12px;cursor:grab;touch-action:pan-y;outline-offset:3px}
 .hero3d.grab{cursor:grabbing}
+/* solar panels supplied */
+.pnl{margin:0 0 34px}
+.pnl-head{display:flex;gap:18px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}
+.pnl-head h2{margin:0 0 6px}
+.pnl-head p{margin:0;max-width:64ch;color:var(--muted)}
+.pnl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.pnl-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.pnl-card h3{margin:0 0 4px;font-size:1.05rem}
+.pnl-type{display:block;font-size:.82rem;color:var(--muted);margin-bottom:10px}
+.pnl-w{display:flex;flex-wrap:wrap;gap:6px}
+.pnl-w b{font-family:var(--f-mono);font-weight:500;font-size:.86rem;padding:3px 9px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--accent-text)}
 /* solar system model */
 .solar3d{margin:8px 0 30px}
 .s3-card{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:clamp(18px,3vw,36px);align-items:center;padding:clamp(14px,2.4vw,26px);border-radius:22px;background:linear-gradient(160deg,#0B1222,#0F172A 60%,#13213f);color:#E6EDF7;border:1px solid rgba(148,163,184,.22)}
@@ -745,6 +756,30 @@ function initHero() {
   if (reduce) still(); else H3.raf = requestAnimationFrame(loop);
 }
 
+/* Solar panels supplied: brands and ratings as given by IAK (availability changes with stock). */
+const PANEL_LIST = [
+  ['Inverex Mustang', 'Bifacial', ['620 W']],
+  ['Jinko', 'N-type bifacial', ['585 W', '645 W']],
+  ['Corradawn', 'BC technology', ['655 W']],
+  ['Aiko', 'BC technology', ['640 W', '665 W']],
+  ['Yingli', 'N-type bifacial', ['630 W', '645 W']],
+  ['Longi Hi-MO X10', 'High-efficiency', ['645 W', '650 W']],
+  ['JA Solar', 'N-type bifacial', ['585 W', '625 W']],
+  ['Trina', 'N-type bifacial', ['720 W', '725 W']],
+  ['Jesko', 'N-type bifacial', ['585 W']],
+  ['Korean', 'N-type bifacial', ['585 W', '715 W']],
+  ['TCL Solar', 'N-type bifacial', ['615 W']],
+  ['OSDA', 'N-type bifacial', ['585 W']],
+  ['Canadian', 'N-type bifacial', ['585 W', '615 W', '620 W', '625 W', '635 W']]
+];
+const PANELS = '<section class="pnl" aria-labelledby="pnl-h"><div class="pnl-head"><div><h2 id="pnl-h">Solar panels we supply</h2>' +
+  '<p>Modern N-type, HJT and BC technology panels from leading brands, in ratings from 585 W to 725 W. Tell us your load and roof or land space and we will recommend the right panel and array size.</p></div>' +
+  '<button class="btn primary" data-action="quote" data-id="solar-res">Request a solar quote</button></div>' +
+  '<div class="pnl-grid">' + PANEL_LIST.map(function (x) {
+    return '<div class="pnl-card"><h3>' + x[0] + '</h3><span class="pnl-type">' + x[1] + '</span><div class="pnl-w">' +
+      x[2].map(function (w) { return '<b>' + w + '</b>'; }).join('') + '</div></div>';
+  }).join('') + '</div>' +
+  '<p class="cap">Brands and ratings in stock change from time to time. We confirm exact models, availability and price when we quote. B/F means bifacial, BC means back contact.</p></section>';
 /* Solar: animated 3D model of a working rooftop solar system with battery storage (illustrative).
    Panels generate by day, the battery supplies the home at night. Drag to rotate, slider sets the time of day. */
 const SOLAR = '<section class="solar3d" aria-labelledby="s3-h"><div class="s3-card">' +
@@ -1255,7 +1290,7 @@ function viewCat(r) {
   var c = CAT[r.id], f = S.f, base = D.products.filter(function (p) { return p.category === c.id; });
   var brands = brandsIn(base);
   return crumbs([['Home', '#home'], ['Solutions', '#solutions'], [c.name]]) +
-    '<div class="wrap"><div class="page-head"><div><h1>' + esc(c.name) + '</h1><p>' + esc(c.description) + '</p></div><div class="cart">' + cvis(c) + '</div></div>' + (c.id === 'power' ? SOLAR : '') +
+    '<div class="wrap"><div class="page-head"><div><h1>' + esc(c.name) + '</h1><p>' + esc(c.description) + '</p></div><div class="cart">' + cvis(c) + '</div></div>' + (c.id === 'power' ? SOLAR + PANELS : '') +
     '<div class="subtabs" role="group" aria-label="Sub-categories"><button class="fchip" data-action="sub" data-sub="all" aria-pressed="' + (f.sub === 'all') + '">All (' + base.length + ')</button>' +
     c.subs.map(function (s) { var n = base.filter(function (p) { return p.sub === s.id; }).length; return '<button class="fchip" data-action="sub" data-sub="' + s.id + '" aria-pressed="' + (f.sub === s.id) + '">' + esc(s.name) + ' (' + n + ')</button>'; }).join('') + '</div>' +
     '<div class="toolbar"><div class="field"><label for="f-q">Search in this category</label><input id="f-q" type="search" data-f="q" value="' + esc(f.q) + '" placeholder="Name, model or brand" autocomplete="off"></div>' +
@@ -1288,7 +1323,7 @@ function viewProduct(r) {
     '<label class="chk btn ghost" style="gap:8px"><input type="checkbox" data-action="compare" data-id="' + p.id + '"' + (inCmp ? ' checked' : '') + '> Compare</label>' +
     '<button class="icon-btn" data-action="fav" data-id="' + p.id + '" aria-pressed="' + isFav + '" aria-label="' + (isFav ? 'Remove from saved' : 'Save this item') + '">' + icon('heart', 20) + '</button></div>' +
     '<div class="ds"><span><b>Datasheet:</b> no file is published for this item yet.</span><button class="btn ghost sm" data-action="ds" data-id="' + p.id + '" aria-pressed="' + dsOn + '">' + (dsOn ? 'Datasheet requested' : 'Request datasheet') + '</button></div></div></div>' +
-    (p.sub === 'solar' ? SOLAR : '') +
+    (p.sub === 'solar' ? SOLAR + PANELS : '') +
     '<section class="tabs-sec"><h2>Overview</h2><p style="max-width:70ch">' + esc(p.description) + '</p></section>' +
     '<section class="tabs-sec"><h2>Specifications</h2><div class="tbl-wrap"><table class="spec"><caption class="cap" style="text-align:left;padding:10px 14px 0;caption-side:bottom">' + esc(st[0]) + ': ' + esc(st[2]) + '</caption><tbody>' +
     (function () { var seen = {}; p.specs.forEach(function (x) { seen[x[0].toLowerCase()] = 1; }); return [['Model', p.model], ['Brand', brandsText(p)], ['Type', TYPE[p.type]], ['Environment', ENV[p.env]]].filter(function (x) { return !seen[x[0].toLowerCase()]; }).concat(p.specs); })().map(function (x) { return '<tr><th scope="row">' + esc(x[0]) + '</th><td>' + esc(x[1]) + '</td></tr>'; }).join('') + '</tbody></table></div></section>' +
