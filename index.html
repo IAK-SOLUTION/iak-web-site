@@ -845,24 +845,18 @@ function initHero() {
   if (reduce) still(); else H3.raf = requestAnimationFrame(loop);
 }
 
-/* Fire detection: animated 3D model of one floor, from first smoke to the brigade being called (illustrative). Based on the supplied sequence model. */
+/* Fire detection: animated 3D model of one floor, from ignition through smoke spread, alarm, evacuation and the receiving centre (illustrative). Based on the supplied sequence model. */
 const FIRE = '<section class="f3" aria-labelledby="f3-h">' +
-  '<div class="f3-top"><h2 id="f3-h">How a fire detection system works</h2>' +
-  '<p class="f3-sub">A surveyed floor, six detectors on one loop and a panel by the stair. Watch the sequence from the first smoke to the brigade being called, or drag the model to look around it.</p></div>' +
-  '<div class="f3-art"><canvas id="fire3d" tabindex="0" role="img" aria-label="Interactive 3D model of a floor with ceiling smoke detectors, a loop cable route back to the fire alarm panel, sounders and an exit route. Drag or use the arrow keys to rotate."></canvas>' +
-  '<div class="f3-legend"><span class="f3-lg"><i style="background:#9AA8BF"></i>Smoke</span><span class="f3-lg"><i style="background:#E5484D"></i>Detector</span>' +
-  '<span class="f3-lg dash"><i></i>Loop cable</span><span class="f3-lg"><i style="background:#FBBF24"></i>Sounder</span><span class="f3-lg"><i style="background:#4ADE80"></i>Exit route</span>' +
-  '<span class="f3-hint">Drag to rotate</span></div></div>' +
+  '<div class="f3-top"><h2 id="f3-h">How a fire detection system works</h2><p class="f3-sub">The same surveyed floor, six detectors on one loop and a panel by the stair. A fire starts in the store and the smoke has to find its way out through the doors before anything else happens. Drag the model to look around it.</p></div>' +
+  '<div class="f3-art"><canvas id="fire3d" tabindex="0" role="img" aria-label="Interactive 3D model of a floor with ceiling smoke detectors on a loop back to the fire alarm panel, a fire in the store, smoke spreading through doorways, sounders, people evacuating to the stair, and an alarm receiving centre off site. Drag or use the arrow keys to rotate."></canvas><div class="f3-legend"><span class="f3-lg"><i style="background:#9AA8BF"></i>Smoke</span><span class="f3-lg"><i style="background:#E5484D"></i>Detector in alarm</span><span class="f3-lg dash"><i></i>Loop cable</span><span class="f3-lg"><i style="background:#FBBF24"></i>Sounder</span><span class="f3-lg"><i style="background:#4ADE80"></i>Escape route</span><span class="f3-lg"><i style="background:#7DD3FC"></i>Receiving centre</span><span class="f3-hint">Drag to rotate</span></div></div>' +
   '<div class="f3-bar"><button type="button" class="f3-play" id="f3-play">Pause</button><div class="f3-stages" id="f3-stages" role="group" aria-label="Jump to a stage"></div></div>' +
-  '<p class="f3-cap" id="f3-cap"><span><b id="f3-capT">System normal</b><span id="f3-capB"></span></span></p>' +
-  '<p class="f3-sr" aria-live="polite" id="f3-live"></p>' +
-  '<p class="cap f3-note">Illustrative model, not a specific design. Detector positions, loop routes and panel locations are set at your site survey.</p></section>';
+  '<p class="f3-cap" id="f3-cap"><span><b id="f3-capT"></b><span id="f3-capB"></span></span></p><p class="f3-sr" aria-live="polite" id="f3-live"></p>' +
+  '<p class="cap f3-note">Illustrative model, not a specific design. Positions, routes and equipment are set at your site survey.</p></section>';
 var F3 = { raf: 0, io: null, ro: null };
 function initFire() {
   if (F3.raf) { cancelAnimationFrame(F3.raf); F3.raf = 0; }
   if (F3.io) { F3.io.disconnect(); F3.io = null; }
   if (F3.ro) { F3.ro.disconnect(); F3.ro = null; }
-  'use strict';
 
   var cv=document.getElementById('fire3d'); if(!cv||!cv.getContext) return;
   var visible=true;
@@ -870,20 +864,22 @@ function initFire() {
   var reduce=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   /* ---------- stages ---------- */
-  var DUR=25;
+  var DUR=32, IGN=3, SPD=18;      /* ignition time, and how fast the smoke front travels */
   var ST=[
    {t:0,    n:'Normal',    T:'System normal',
-    B:'The panel polls every device on the loop in turn. Each detector answers with its address and the amount of smoke it can see. The cable route runs back to the panel by the stair.'},
-   {t:3,    n:'Smoke',     T:'Smoke reaches the ceiling',
-    B:'A fire starts in the store. Hot gases carry the smoke straight up, and it spreads outward along the slab as a shallow ceiling jet.'},
-   {t:7,    n:'Detection', T:'D1 sees it',
-    B:'Smoke enters the chamber of the nearest detector and scatters its infrared beam onto the sensing cell. The reading climbs past the alarm threshold.'},
-   {t:11,   n:'Signal',    T:'Alarm confirmed at the panel',
-    B:'D1 answers the next poll with a value well over threshold. The panel holds it for a second poll, then latches the alarm and names the zone.'},
-   {t:14.5, n:'Alarm',     T:'Evacuation signal', alarm:1,
-    B:'Sounders and beacons operate across the floor, call points light up, and held-open fire doors release so the compartments close.'},
-   {t:19,   n:'Brigade',   T:'Transmitted and mobilised', alarm:1,
-    B:'Occupants leave by the protected stair while the panel signals the alarm receiving centre, which passes the call to fire and rescue.'}
+    B:'The panel polls every device on the loop in turn, and each detector answers with its address and how much smoke it can see. Three people are at work on the floor.'},
+   {t:3,    n:'Ignition',  T:'A fire starts in the store',
+    B:'Hot gases carry smoke straight up to the slab and it begins to bank down. The store door is shut, so for now the smoke has nowhere to go but the store.'},
+   {t:4.7,  n:'Detection', T:'D1 sees it first', alarm:1,
+    B:'The detector directly above the fire reaches its threshold. The panel holds the value for a second poll before it will act on it.'},
+   {t:7.5,  n:'Alarm',     T:'Confirmed and latched', alarm:1,
+    B:'The panel latches the alarm, names the device and its zone, and starts its cause-and-effect programme. Sounders and beacons operate across the whole floor, not just the zone in alarm.'},
+   {t:11,   n:'Evacuate',  T:'Everyone leaves by the stair', alarm:1,
+    B:'Held-open doors release, lifts recall to the exit level and the floor empties towards the protected stair — away from the fire, not past it.'},
+   {t:16,   n:'Spread',    T:'Zone by zone', alarm:1,
+    B:'Smoke works out of the store door and along the ceiling of the corridor. Each detector it reaches adds its own zone, which is how the panel builds a picture of where the fire has got to.'},
+   {t:23,   n:'Brigade',   T:'The receiving centre picks it up', alarm:1,
+    B:'A dual-path signal reaches the alarm receiving centre. The operator sees the event on the monitor and on the mobile app, verifies it against the site record, and passes it to fire and rescue.'}
   ];
   function si(t){var k=0;for(var i=0;i<ST.length;i++) if(t>=ST[i].t) k=i; return k;}
 
@@ -896,7 +892,7 @@ function initFire() {
   var LX=-.45, LY=.7, LZ=-.55;
   var STEEL=[226,232,240], SLATE=[30,41,59], NAVY=[15,23,42], SKY=[56,189,248],
       RED=[229,72,77], GREY=[148,163,184], AMBER=[251,191,36], GREEN=[74,222,128],
-      WALLC=[186,200,220];
+      WALLC=[186,200,220], SNOW=[248,250,252];
 
   function wp(px,pz){return [px+BX, pz+BZ];}
   function rgba(c,b,a){return 'rgba('+(c[0]*b|0)+','+(c[1]*b|0)+','+(c[2]*b|0)+','+a+')';}
@@ -932,59 +928,68 @@ function initFire() {
       STATIC.push(box(w[0],WH/2,w[1],sx,WH,sz,WALLC,.82,null,false,1));
     }
   }
-  /* envelope */
-  wall(40,46,480,46); wall(480,46,480,346); wall(480,346,40,346); wall(40,346,40,46);
-  /* corridor walls, with door openings */
-  wall(40,150,200,150); wall(260,150,480,150);
-  wall(40,240,170,240); wall(230,240,400,240);
-  /* partitions */
+  /* envelope, entrance left open in the south wall */
+  wall(40,46,480,46); wall(480,46,480,346); wall(40,346,110,346); wall(160,346,480,346); wall(40,346,40,46);
+  /* corridor walls: store door 100-140, office door 200-260, plant door 400-440 */
+  wall(40,150,100,150); wall(140,150,200,150); wall(260,150,400,150); wall(440,150,480,150);
+  wall(40,240,170,240); wall(230,240,300,240); wall(330,240,400,240);
   wall(170,46,170,150); wall(330,46,330,150);
   wall(200,240,200,346); wall(360,240,360,346);
 
   var p;
-  /* fire alarm panel, on the corridor side of the stair wall */
-  var PAN=wp(424,232);
-  STATIC.push(box(PAN[0],18,PAN[1],24,34,11,SLATE,1,null,false,2));
-  /* panel screen is drawn live in frameDraw */
-
-  /* server racks */
-  var RACKS=[wp(262,296),wp(288,296)];
-  RACKS.forEach(function(q){STATIC.push(box(q[0],15,q[1],20,30,24,[24,34,56],1,null,false,2));});
-  /* plant room kit */
   p=wp(440,92); STATIC.push(box(p[0],18,p[1],28,36,12,STEEL,1,null,false,2));
-  STATIC.push(box(p[0],24,p[1]+6.4,14,9,.6,NAVY,1,null,true));
-  /* the store: shelving and the seat of the fire */
   p=wp(60,70);  STATIC.push(box(p[0],16,p[1],14,32,40,[32,46,74],1,null,false,2));
-  var SRC=wp(86,120);
+  p=wp(112,282); STATIC.push(box(p[0],12,p[1],56,24,16,[32,46,74],1,null,false,2));
+  [wp(214,78),wp(284,78)].forEach(function(q){STATIC.push(box(q[0],11,q[1],40,4,22,[36,52,82],1,null,false,2));});
+  var RACKS=[wp(262,300),wp(290,300)];
+  RACKS.forEach(function(q){STATIC.push(box(q[0],15,q[1],20,30,24,[24,34,56],1,null,false,2));});
+  /* the seat of the fire */
+  var SRC=wp(85,112);
   STATIC.push(box(SRC[0],9,SRC[1],17,18,17,[46,36,34],1,null,false,2));
 
-  /* devices */
+  /* the panel, by the stair */
+  var PAN=wp(424,232);
+  STATIC.push(box(PAN[0],18,PAN[1],24,34,11,SLATE,1,null,false,2));
+
+  /* ---------- detectors, and the route the smoke has to take to reach each ---------- */
   var DETS=[
-   {p:wp(130,86),  id:'D1', main:1},
-   {p:wp(250,96),  id:'D2'},
-   {p:wp(412,96),  id:'D3'},
-   {p:wp(150,196), id:'D4'},
-   {p:wp(342,196), id:'D5'},
-   {p:wp(276,300), id:'D6'}
+   {id:'D1', zone:'Z1 STORE',      p:wp(110,96),  r:[SRC,wp(100,100),wp(110,96)]},
+   {id:'D4', zone:'Z2 CORRIDOR W', p:wp(150,196), r:[SRC,wp(112,136),wp(120,168),wp(150,192)]},
+   {id:'D2', zone:'Z3 OFFICE',     p:wp(250,96),  r:[SRC,wp(112,136),wp(120,172),wp(215,180),wp(232,150),wp(248,104)]},
+   {id:'D6', zone:'Z5 RECEPTION',  p:wp(112,296), r:[SRC,wp(112,136),wp(120,176),wp(186,198),wp(196,232),wp(150,262),wp(114,292)]},
+   {id:'D5', zone:'Z2 CORRIDOR E', p:wp(360,196), r:[SRC,wp(112,136),wp(120,172),wp(200,196),wp(300,196),wp(360,196)]},
+   {id:'D3', zone:'Z4 PLANT',      p:wp(412,96),  r:[SRC,wp(112,136),wp(120,172),wp(200,196),wp(330,196),wp(420,186),wp(420,140),wp(412,104)]}
   ];
-  var SOUND=[{p:wp(214,156),w:'n'},{p:wp(62,232),w:'n'},{p:wp(430,158),w:'n'}];
+  var SOUND=[{p:wp(214,156)},{p:wp(62,232)},{p:wp(430,158)}];
   SOUND.forEach(function(s){STATIC.push(box(s.p[0],27,s.p[1],11,13,7,[120,92,34],1,null,false,2));});
   var MCP=[wp(404,232),wp(52,250)];
   MCP.forEach(function(q){STATIC.push(box(q[0],16,q[1],9,12,5,[120,40,44],1,null,false,2));});
 
-  /* loop cable routes, drawn on the floor */
+  /* loop cabling back to the panel */
   var ROUTES=[
-    [wp(420,226),wp(420,196),wp(342,196),wp(150,196),wp(118,196),wp(118,120),wp(130,92)],
-    [wp(342,196),wp(342,124),wp(412,102)],
-    [wp(300,196),wp(300,228),wp(276,228),wp(276,294)]
+    [PAN,wp(420,196),wp(360,196),wp(200,196),wp(150,192),wp(120,170),wp(112,136),wp(110,100)],
+    [wp(330,196),wp(232,180),wp(232,150),wp(248,104)],
+    [wp(420,196),wp(420,150),wp(412,104)],
+    [wp(300,196),wp(250,230),wp(180,252),wp(114,292)]
   ];
-  /* the alarm travels back to the panel along route 0, reversed */
   var SIGPATH=ROUTES[0].slice().reverse();
-  /* escape route to the protected stair */
-  var EXITP=[wp(100,140),wp(118,172),wp(220,196),wp(400,196),wp(420,276),wp(420,330)];
+
+  /* the protected escape route */
+  var EXITP=[wp(150,196),wp(240,196),wp(340,196),wp(410,206),wp(422,268),wp(425,326)];
+
+  /* three people at work, and the way each of them gets out */
+  var PEOPLE=[
+   {home:wp(214,92),  d:0,   r:[wp(214,92),wp(228,130),wp(230,172),wp(262,194),wp(340,196),wp(410,208),wp(424,280),wp(426,330)]},
+   {home:wp(118,268), d:.9,  r:[wp(118,268),wp(156,252),wp(194,232),wp(212,200),wp(300,196),wp(392,198),wp(422,260),wp(426,330)]},
+   {home:wp(444,112), d:.4,  r:[wp(444,112),wp(424,140),wp(420,176),wp(416,212),wp(422,272),wp(426,330)]}
+  ];
 
   var LABELS=[['Store',wp(104,60)],['Office',wp(250,60)],['Plant room',wp(404,60)],
-              ['Corridor',wp(190,176)],['Reception',wp(104,330)],['Server room',wp(280,336)],['Stair',wp(430,330)]];
+              ['Corridor',wp(190,176)],['Reception',wp(92,330)],['Server room',wp(276,338)],['Stair',wp(430,330)]];
+
+  /* ---------- the receiving centre, off site ---------- */
+  var RX=300, RZ=26, OPR=[250,68], PHX=344, PHZ=20;
+  var LINK=[[164,36],[196,50],[226,46],[248,34]];
 
   /* ---------- projection ---------- */
   var CY=12;
@@ -1022,53 +1027,131 @@ function initFire() {
     for(k=0;k<30;k++) pts.push(proj([cx+Math.cos(k/30*6.2832)*r,.5,cz+Math.sin(k/30*6.2832)*r]));
     pathOf(pts,true);ctx.strokeStyle=rgba(col,1,a);ctx.lineWidth=lw||1.6;ctx.stroke();
   }
-  function along(path,u){
-    var seg=[],tot=0,i,dx,dz;
+  function lens(path){var s=[],tot=0,i,dx,dz;
     for(i=0;i<path.length-1;i++){dx=path[i+1][0]-path[i][0];dz=path[i+1][1]-path[i][1];
-      var d=Math.sqrt(dx*dx+dz*dz);seg.push(d);tot+=d;}
-    var want=u*tot,acc=0;
-    for(i=0;i<seg.length;i++){
-      if(acc+seg[i]>=want){var f=(want-acc)/(seg[i]||1);
+      s.push(Math.sqrt(dx*dx+dz*dz));tot+=s[i];}
+    return {s:s,tot:tot};}
+  function along(path,u){
+    var L=lens(path), want=Math.max(0,Math.min(1,u))*L.tot, acc=0, i;
+    for(i=0;i<L.s.length;i++){
+      if(acc+L.s[i]>=want){var f=(want-acc)/(L.s[i]||1);
         return [path[i][0]+(path[i+1][0]-path[i][0])*f, path[i][1]+(path[i+1][1]-path[i][1])*f];}
-      acc+=seg[i];
+      acc+=L.s[i];
     }
     return path[path.length-1];
   }
+  function pill(q,txt,bg,fg,stroke){
+    var w=ctx.measureText(txt).width+16;
+    ctx.fillStyle=bg;ctx.beginPath();
+    if(ctx.roundRect)ctx.roundRect(q[0]-w/2,q[1]-10,w,20,10);else ctx.rect(q[0]-w/2,q[1]-10,w,20);
+    ctx.fill();
+    if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke();}
+    ctx.fillStyle=fg;ctx.fillText(txt,q[0],q[1]+.5);
+  }
 
-  /* ---------- smoke ---------- */
-  var NS=64;
-  function smokeAt(t){
-    if(t<2.6) return;
-    var grow=Math.min(1,(t-2.6)/4.5);
-    for(var i=0;i<NS;i++){
-      var o=rnd(i,1), cyc=4.6+rnd(i,2)*3.4, w1=rnd(i,3), w2=rnd(i,4);
-      var st=2.6+o*2.2; if(t<st) continue;
+  /* how far the smoke has travelled, and which detectors that reaches */
+  DETS.forEach(function(d){ d.len=lens(d.r).tot; });
+  PEOPLE.forEach(function(q){ q.len=lens(q.r).tot; });
+  function frontAt(t){ return Math.max(0,(t-IGN)*SPD); }
+
+  /* ---------- smoke, carried along the routes it can actually take ---------- */
+  var NS=90;
+  function smokeAt(t,front){
+    if(t<IGN-.4) return;
+    var grow=Math.min(1,(t-IGN+.4)/3.5);
+    /* the column rising off the fire */
+    for(var i=0;i<28;i++){
+      var o=rnd(i,1), cyc=3.4+rnd(i,2)*2.2, st=IGN-.4+o*1.6;
+      if(t<st) continue;
       var u=((t-st)/cyc)%1;
-      var lift=u*(74+o*40);
-      var spr=u*u*(18+58*grow);
-      var x=SRC[0]+(w1-.5)*spr*2+Math.sin(u*5+o*6.3)*7*u;
-      var z=SRC[1]+(w2-.5)*spr*2+Math.cos(u*4+o*6.3)*7*u;
-      var q=proj([x,8+lift,z]);
-      var a=.26*Math.min(1,u*5)*(1-u*.88)*grow;
-      if(a<=.004) continue;
-      items.push({l:3,z:q[2],k:3,x:q[0],y:q[1],r:(13+u*40)*q[5],a:a});
+      var q=proj([SRC[0]+Math.sin(u*5+o*6.3)*12*u+(rnd(i,3)-.5)*10,
+                  10+u*(WH-16), SRC[1]+Math.cos(u*4+o*6.3)*12*u+(rnd(i,4)-.5)*10]);
+      var a=.24*Math.min(1,u*5)*(1-u*.8)*grow;
+      items.push({l:3,z:q[2],k:3,x:q[0],y:q[1],r:(12+u*26)*q[5],a:a});
     }
-    /* the seat of the fire */
-    var f=proj([SRC[0],12,SRC[1]]);
-    var fl=grow*(.8+(reduce?.2:.2*Math.sin(t*9)));
-    glow(f,34*f[5]*(1+(reduce?0:.08*Math.sin(t*12))),
+    /* and the layer running out along the ceiling, route by route */
+    for(var j=0;j<NS;j++){
+      var ro=DETS[j%DETS.length], ph=rnd(j,5), sp=.1+rnd(j,6)*.16;
+      var reach=Math.min(1,front/ro.len);
+      if(reach<=0.01) continue;
+      var u2=((t*sp+ph)%1);
+      var dpos=reach*(.12+.88*u2);
+      var g=along(ro.r,dpos);
+      var wob=(rnd(j,7)-.5)*17*Math.min(1,dpos*3);
+      var q2=proj([g[0]+wob, WH-9+Math.sin(u2*4+ph*6)*3, g[1]+(rnd(j,8)-.5)*17*Math.min(1,dpos*3)]);
+      var a2=.20*grow*Math.min(1,u2*6)*(1-u2*.55);
+      items.push({l:3,z:q2[2],k:3,x:q2[0],y:q2[1],r:(20+dpos*34)*q2[5],a:a2});
+    }
+    /* the fire itself */
+    var f=proj([SRC[0],14,SRC[1]]);
+    var fl=grow*(.85+(reduce?.15:.15*Math.sin(t*9)));
+    glow(f,36*f[5]*(1+(reduce?0:.08*Math.sin(t*12))),
       'rgba(255,214,150,'+(.9*fl).toFixed(3)+')','rgba(229,110,60,0)');
+  }
+
+  /* ---------- the receiving centre desk ---------- */
+  function arcDesk(t,ra){
+    var bl=reduce?.9:(((t*1.3)%1)<.55?1:.25);
+    ground(function(){
+      var e=[proj([RX-69,.35,RZ-56]),proj([RX+69,.35,RZ-56]),proj([RX+69,.35,RZ+56]),proj([RX-69,.35,RZ+56])];
+      pathOf(e,true);ctx.fillStyle='rgba(20,32,56,'+(.85*ra).toFixed(3)+')';ctx.fill();
+      ctx.strokeStyle='rgba(125,211,252,'+(.4*ra).toFixed(3)+')';ctx.lineWidth=1.2;ctx.stroke();
+      ctx.save();ctx.lineWidth=2;ctx.lineJoin='round';ctx.setLineDash([8,8]);
+      ctx.lineDashOffset=reduce?0:-t*34;
+      ctx.strokeStyle='rgba(229,72,77,'+(.9*ra).toFixed(3)+')';
+      pathOf(LINK.map(function(q){return proj([q[0],.8,q[1]]);}),false);ctx.stroke();ctx.restore();
+    });
+    var lq=along(LINK,(t*.45)%1), lp=proj([lq[0],2.5,lq[1]]);
+    glow(lp,12*lp[5],'rgba(255,190,190,'+(.95*ra).toFixed(3)+')','rgba(229,72,77,0)');
+
+    pushBody(box(RX,14,RZ-2,96,28,44,[32,46,74],ra,null,false,2),2);
+    pushBody(box(RX,30,RZ,22,3,12,GREY,ra,null,false,2),2);
+    pushBody(box(RX,37,RZ,5,12,5,GREY,ra,null,false,2),2);
+    pushBody(box(RX,56,RZ,62,38,3.4,[18,26,44],ra,null,false,2),2);
+    pushBody(box(RX,56,RZ+2,56,32,.6,[8,14,28],ra,null,true),2);
+    /* the event on screen: the site mimic, with the zone in alarm */
+    pushBody(box(RX,56,RZ+2.5,54,30,.4,[52,30,38],.9*ra,null,true),2);
+    pushBody(box(RX-6,60,RZ+2.9,18,1.1,.3,RED,ra,null,true),2);
+    pushBody(box(RX-6,48,RZ+2.9,18,1.1,.3,RED,ra,null,true),2);
+    pushBody(box(RX-15,54,RZ+2.9,1.1,12,.3,RED,ra,null,true),2);
+    pushBody(box(RX+3,54,RZ+2.9,1.1,12,.3,RED,ra,null,true),2);
+    pushBody(box(RX-6,54,RZ+2.8,5,5,.3,[255,200,200],bl*ra,null,true),2);
+    pushBody(box(RX+20,66,RZ+2.9,3,3,.3,RED,bl*ra,null,true),2);
+    glow(proj([RX,56,RZ+4]),46*U,'rgba(255,150,150,'+(.28*ra).toFixed(3)+')','rgba(229,72,77,0)');
+
+    /* the phone */
+    pushBody(box(PHX,44,PHZ,16,30,3,[18,26,44],ra,null,false,2),2);
+    pushBody(box(PHX,44,PHZ+1.9,13,25,.5,[10,18,34],ra,null,true),2);
+    pushBody(box(PHX,53,PHZ+2.3,12,6,.3,RED,bl*ra,null,true),2);
+    pushBody(box(PHX,42,PHZ+2.3,11,13,.3,[52,30,38],.9*ra,null,true),2);
+    glow(proj([PHX,52,PHZ+3]),18*U,'rgba(255,170,170,'+(.3*ra).toFixed(3)+')','rgba(229,72,77,0)');
+
+    /* the operator */
+    ground(function(){
+      var s=proj([OPR[0],.45,OPR[1]]);
+      ctx.beginPath();ctx.ellipse(s[0],s[1],13*s[5]*1.6,5*s[5]*1.6,0,0,6.2832);
+      ctx.fillStyle='rgba(0,0,0,'+(.34*ra).toFixed(3)+')';ctx.fill();
+    });
+    pushBody(prism(OPR[0],12,OPR[1],5.6,24,10,[125,211,252],ra,false),2);
+    pushBody(prism(OPR[0],27.5,OPR[1],4,7,10,SNOW,ra,false),2);
   }
 
   /* ---------- frame ---------- */
   function frameDraw(t){
     if(!size()) return;
-    var S=si(t), alarm=t>=ST[4].t, detected=t>=ST[2].t, signalling=t>=ST[3].t, evac=t>=ST[5].t;
+    var front=frontAt(t);
+    var detected=t>=ST[2].t, alarm=t>=ST[3].t, evac=t>=ST[4].t, arc=t>=ST[6].t;
     ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,Ht);
     var yaw=(reduce?.55:.55+.78*Math.sin(auto*.17))+yawOff;
     var pitch=Math.max(.42,Math.min(1.25,.84+pitchOff));
     cyw=Math.cos(yaw);syw=Math.sin(yaw);cpt=Math.cos(pitch);spt=Math.sin(pitch);
     items=[];
+    var bl=reduce?.9:(((t*1.4)%1)<.6?1:.25);
+
+    /* which detectors the smoke has actually reached */
+    var TRIP=DETS.map(function(d){return front>=d.len;});
+    var nTrip=0, firstTrip=null;
+    TRIP.forEach(function(v,i){ if(v){nTrip++; if(!firstTrip) firstTrip=DETS[i];} });
 
     /* floor slab + grid */
     pushBody(box(0,-3,0,452,6,312,[20,32,56],.96,null,false,0),0,1e9);
@@ -1082,43 +1165,40 @@ function initFire() {
       pathOf(e,true);ctx.strokeStyle=alarm?'rgba(229,72,77,.4)':'rgba(56,189,248,.35)';ctx.lineWidth=1.2;ctx.stroke();
     });
 
-    /* loop cable routes */
+    /* loop cabling */
     ground(function(){
       ctx.save();ctx.lineWidth=2.2;ctx.lineJoin='round';
-      ctx.setLineDash([7,7]);ctx.lineDashOffset=reduce?0:-t*(signalling?46:20);
+      ctx.setLineDash([7,7]);ctx.lineDashOffset=reduce?0:-t*(alarm?46:20);
       ROUTES.forEach(function(r,i){
-        ctx.strokeStyle=(signalling&&i===0)?'rgba(229,72,77,.95)':'rgba(56,189,248,.9)';
+        ctx.strokeStyle=(alarm&&i===0)?'rgba(229,72,77,.95)':'rgba(56,189,248,.9)';
         pathOf(r.map(function(q){return proj([q[0],.6,q[1]]);}),false);ctx.stroke();
       });
       ctx.restore();
     });
 
-    /* the alarm travelling back down the loop to the panel */
-    if(signalling&&t<ST[4].t+1.4){
-      var u=Math.min(1,(t-ST[3].t)/2.6), e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+    /* the alarm travelling down the loop to the panel */
+    if(detected&&t<ST[3].t+1.4){
+      var u=Math.min(1,(t-ST[2].t)/2.4), e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
       var q=along(SIGPATH,e), pq=proj([q[0],2,q[1]]);
       glow(pq,16*pq[5],'rgba(255,190,190,.95)','rgba(229,72,77,0)');
-      ground(function(){ringOn(q[0],q[1],10+14*((t*2)%1),RED,.5*(1-((t*2)%1)),1.4);});
     }
 
     /* escape route */
     if(evac){
       ground(function(){
-        var u=Math.min(1,(t-ST[5].t)/1.2);
+        var u=Math.min(1,(t-ST[4].t)/1.2);
         ctx.save();ctx.lineWidth=2.6;ctx.lineJoin='round';ctx.setLineDash([9,8]);
         ctx.lineDashOffset=reduce?0:-t*38;
         ctx.strokeStyle='rgba(74,222,128,'+(.9*u).toFixed(3)+')';
         pathOf(EXITP.map(function(q){return proj([q[0],1.2,q[1]]);}),false);ctx.stroke();
         ctx.restore();
       });
-      var m=along(EXITP,((t-ST[5].t)*.34)%1), mq=proj([m[0],3,m[1]]);
-      glow(mq,13*mq[5],'rgba(187,247,208,.95)','rgba(74,222,128,0)');
     }
 
-    /* detector ripples */
+    /* detector ripples — a detector only reacts once the smoke has reached it */
     ground(function(){
       DETS.forEach(function(d,i){
-        var hot=d.main&&detected;
+        var hot=TRIP[i];
         var sp=hot?1.5:.55, col=hot?RED:[120,150,190];
         var ph=reduce?.3:((t*sp+i*.27)%1), r=(hot?12:8)+(hot?52:26)*ph;
         ringOn(d.p[0],d.p[1],r,col,(hot?1:.5)*(1-ph),hot?2:1.4);
@@ -1138,38 +1218,23 @@ function initFire() {
       });
     }
 
-    /* transmission to the receiving centre */
-    if(evac){
-      ground(function(){
-        var ph=reduce?.4:((t*.55)%1);
-        ringOn(PAN[0],PAN[1],20+190*ph,SKY,.5*(1-ph),1.6);
-      });
-      var bq=proj([PAN[0],46+10*Math.sin(t*3),PAN[1]]);
-      glow(bq,20*bq[5],'rgba(186,230,253,.9)','rgba(56,189,248,0)');
-    }
-
     /* built fabric */
     STATIC.forEach(function(B){pushBody(B,2);});
 
-    /* panel screen */
-    var pOn=alarm?(reduce?.95:(((t*1.4)%1)<.6?1:.3)):.9;
-    pushBody(box(PAN[0],20,PAN[1]+5.9,18,22,1.2,alarm?RED:SKY,pOn,null,true),2);
+    /* panel face */
+    pushBody(box(PAN[0],20,PAN[1]+5.9,18,22,1.2,alarm?RED:SKY,alarm?bl:.9,null,true),2);
     pushBody(box(PAN[0],8,PAN[1]+5.9,16,3,.8,alarm?[255,200,200]:NAVY,1,null,true),2);
-
-    /* call points brighten in alarm */
     MCP.forEach(function(q){
-      pushBody(box(q[0],16,q[1]+3,6,7,.8,RED,alarm?(reduce?.9:(((t*2)%1)<.5?1:.4)):.35,null,true),2);
+      pushBody(box(q[0],16,q[1]+3,6,7,.8,RED,alarm?bl:.35,null,true),2);
     });
-
-    /* sounder faces */
     SOUND.forEach(function(s,i){
       var on=alarm?(reduce?.95:(((t*2.2+i*.3)%1)<.5?1:.2)):.18;
       pushBody(box(s.p[0],27,s.p[1]+4,7,8,.8,AMBER,on,null,true),2);
     });
 
-    /* detectors on the ceiling */
+    /* detectors */
     DETS.forEach(function(d,i){
-      var hot=d.main&&detected;
+      var hot=TRIP[i];
       var top=proj([d.p[0],WH-2,d.p[1]]), bot=proj([d.p[0],1,d.p[1]]);
       items.push({l:2,z:top[2],k:1,p:[top,bot],s:hot?'rgba(229,72,77,.5)':'rgba(148,163,184,.3)',dash:true});
       pushBody(prism(d.p[0],WH-2,d.p[1],9.5,4,12,STEEL,1,false),2);
@@ -1178,8 +1243,30 @@ function initFire() {
       if(hot) glow(proj([d.p[0],WH+2,d.p[1]]),26*top[5],'rgba(255,170,170,.8)','rgba(229,72,77,0)');
     });
 
-    /* smoke last, so it sorts over the fabric */
-    smokeAt(t);
+    /* the people on the floor */
+    var OUT=[];
+    PEOPLE.forEach(function(q,i){
+      var pos, gone=false;
+      if(!evac) pos=q.home;
+      else{
+        var u=Math.max(0,Math.min(1,(t-ST[4].t-q.d)/7));
+        pos=along(q.r,u);
+        if(u>=1) gone=true;
+      }
+      OUT.push(gone);
+      if(gone) return;
+      ground(function(){
+        var s=proj([pos[0],.45,pos[1]]);
+        ctx.beginPath();ctx.ellipse(s[0],s[1],13*s[5]*1.6,5*s[5]*1.6,0,0,6.2832);
+        ctx.fillStyle='rgba(0,0,0,.34)';ctx.fill();
+      });
+      pushBody(prism(pos[0],12,pos[1],5.6,24,10,evac?GREEN:[160,176,200],1,false),2);
+      pushBody(prism(pos[0],27.5,pos[1],4,7,10,SNOW,1,false),2);
+    });
+    var left=OUT.filter(Boolean).length;
+
+    /* the receiving centre */
+    if(arc) arcDesk(t, Math.min(1,(t-ST[6].t)/1.3));
 
     /* ---------- paint ---------- */
     items.sort(function(a,b){return (a.l-b.l)||(b.z-a.z);});
@@ -1205,33 +1292,30 @@ function initFire() {
       }
     }
 
-    /* room labels */
+    /* ---------- labels ---------- */
     ctx.font='500 '+Math.max(10,11*Math.min(1,U*1.25))+'px '+"'JetBrains Mono', ui-monospace, monospace";
     ctx.textBaseline='middle';ctx.textAlign='center';
     LABELS.forEach(function(l){
-      var q=proj([l[1][0],3,l[1][1]]),w=ctx.measureText(l[0]).width+12;
-      ctx.fillStyle='rgba(15,23,42,.72)';ctx.beginPath();
-      if(ctx.roundRect)ctx.roundRect(q[0]-w/2,q[1]-9,w,18,9);else ctx.rect(q[0]-w/2,q[1]-9,w,18);
-      ctx.fill();ctx.fillStyle='rgba(226,232,240,.92)';ctx.fillText(l[0],q[0],q[1]+.5);
+      pill(proj([l[1][0],3,l[1][1]]),l[0],'rgba(15,23,42,.72)','rgba(226,232,240,.92)',null);
     });
-
-    /* status pill over the panel */
-    var txt=alarm?'FIRE — ZONE 2 STORE':(detected?'D1  3.8 %obs/m':'LOOP 1  POLLING  6/6');
-    var sq=proj([PAN[0],62,PAN[1]]), tw=ctx.measureText(txt).width+16;
-    ctx.fillStyle=alarm?'rgba(229,72,77,.92)':'rgba(15,23,42,.86)';
-    ctx.beginPath();
-    if(ctx.roundRect)ctx.roundRect(sq[0]-tw/2,sq[1]-10,tw,20,10);else ctx.rect(sq[0]-tw/2,sq[1]-10,tw,20);
-    ctx.fill();
-    if(!alarm){ctx.strokeStyle='rgba(56,189,248,.5)';ctx.lineWidth=1;ctx.stroke();}
-    ctx.fillStyle=alarm?'#fff':'rgba(226,232,240,.95)';ctx.fillText(txt,sq[0],sq[1]+.5);
-
-    /* detector tag on the one in alarm */
-    if(detected){
-      var d1=DETS[0], dq=proj([d1.p[0],WH+16,d1.p[1]]), dw=ctx.measureText(d1.id).width+14;
-      ctx.fillStyle='rgba(229,72,77,.92)';ctx.beginPath();
-      if(ctx.roundRect)ctx.roundRect(dq[0]-dw/2,dq[1]-9,dw,18,9);else ctx.rect(dq[0]-dw/2,dq[1]-9,dw,18);
-      ctx.fill();ctx.fillStyle='#fff';ctx.fillText(d1.id,dq[0],dq[1]+.5);
+    DETS.forEach(function(d,i){
+      if(!TRIP[i]) return;
+      pill(proj([d.p[0],WH+20,d.p[1]]), d.id+'  '+d.zone,'rgba(229,72,77,.94)','#fff',null);
+    });
+    if(arc){
+      pill(proj([RX,84,RZ]),'ARC  ·  SITE MIMIC','rgba(229,72,77,.94)','#fff',null);
+      pill(proj([PHX,68,PHZ]),'MOBILE APP','rgba(15,23,42,.8)','rgba(226,237,247,.9)','rgba(56,189,248,.45)');
+      pill(proj([OPR[0],46,OPR[1]]),'OPERATOR','rgba(15,23,42,.8)','rgba(226,237,247,.9)','rgba(125,211,252,.5)');
     }
+
+    /* status over the panel */
+    var txt = arc    ? 'ARC SIGNAL SENT  ·  F&RS MOBILISED' :
+              alarm  ? ('FIRE  ·  '+nTrip+' ZONE'+(nTrip===1?'':'S')+(evac?'  ·  '+left+'/3 OUT':'')) :
+              detected ? ('D1 RISING  ·  '+DETS[0].zone) :
+              t>=IGN ? 'LOOP 1  ·  POLLING  6/6' : 'LOOP 1  ·  POLLING  6/6';
+    pill(proj([PAN[0],72,PAN[1]]),txt,
+      alarm?'rgba(229,72,77,.94)':'rgba(15,23,42,.86)',
+      alarm?'#fff':'rgba(226,232,240,.95)', alarm?null:'rgba(56,189,248,.5)');
   }
 
   function size(){
@@ -1240,7 +1324,7 @@ function initFire() {
     var d=Math.min(window.devicePixelRatio||1,2);
     if(cv.width!==Math.round(w*d)||cv.height!==Math.round(h*d)){cv.width=Math.round(w*d);cv.height=Math.round(h*d);}
     cv.style.height=h+'px';
-    W=w;Ht=h;dpr=d;U=Math.max(.55,Math.min(1.3,w/760));
+    W=w;Ht=h;dpr=d;U=Math.max(.46,Math.min(1.12,w/900));
     return true;
   }
 
@@ -1266,12 +1350,12 @@ function initFire() {
   });
 
   /* ---------- stage strip ---------- */
-  var box2=document.getElementById('f3-stages'),chips=[];
-  ST.forEach(function(s,i){
+  var strip=document.getElementById('f3-stages'),chips=[];
+  ST.forEach(function(s){
     var b=document.createElement('button');
     b.type='button';b.className='f3-st'+(s.alarm?' alarm':'');b.textContent=s.n;
-    b.addEventListener('click',function(){T=s.t+.05;playing=true;setPlay(true);paint();});
-    box2.appendChild(b);chips.push(b);
+    b.addEventListener('click',function(){T=s.t+.05;setPlay(true);paint();});
+    strip.appendChild(b);chips.push(b);
   });
   var cur=-1;
   function stageUI(t){
